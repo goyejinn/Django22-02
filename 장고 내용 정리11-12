@@ -1,0 +1,198 @@
+*------------------------------------- 11. 테스트 주도 개발 적용하기 ---------------------------------------------*
+[---------------------- 테스트 주도 개발 적용하기 -----------------------------]
+1) 테스트 코드 사용 연습
+* python manage.py test
+ex) 
+from django.test import TestCase
+
+class TestView(TestCase):
+    def test_post_list(self):
+        delf.assertEqual(2,3)
+        
+2) beautifulsoup4 설치하기
+* pip install beautifulsoup4
+
+[------------------------ 포스트 목록 페이지 테스트 코드 작성하기 ------------------------------]
+1) test.py에 테스트할 내용 나열하기
+- def test_post_detail(self):
+
+2) post_list.html에서 if문을 사용하여 해당 객체가 있는지 없는지 확인함
+- exits()함수를 이용(count()함수는 수를 셀때 이용)
+blog/templates/blog/post_list.html
+ex)
+           <!-- Featured blog post -->
+              {% if post_list.exists %}
+              {% for p in post_list %}
+              생략...
+            {% else %}
+                <h5>아무 게시물이 없습니다.</h5>
+            {% endif %}
+
+[----------------------------- 포스트 상세 페이지 테스트 코드 작성하기 ----------------------------------]
+1) test.py에 테스트할 내용 나열하기
+- def test_post_list(self):
+
+*------------------------------------------- 12. 템플릿 모듈화하기 --------------------------------------------------*
+[-----------------------------post_list.html 모듈화하기--------------------------------]
+1) base.html만들기
+- post_list.html을 복사한 후 base.html에 붙여넣는다.
+- 그리고 base.html에서 id="main-area"인 div의 요소 내부를 삭제한다.
+- {% block main_area %}과 {% endblock %}을 추가하여 블록을 만들어준다.
+blog/templates/blog/base.html
+ex)
+        ... 생략
+        <div class="container">
+          <div class="row">
+            <div class="col-md-8 col-lg-9" id="main-area">
+              {% block main_area %} <----이것 추가
+              {% endblock %}
+            </div>
+            <div class="col-md-4 col-lg-3">
+               ... 생략
+
+2) base.html을 확장해 post_list.html 넣기
+- post_list.html에는 block 안에 들어가는 요소만 있으면 되므로 base.html에서 지웠던 부분만 남기고 나머지를 전부 지워준다.
+blog/templates/blog/post_list.html
+ex)
+{% extends 'blog/base.html' %} <---------
+
+{% block main_area %} <------------
+              <h2>Blog
+                    {% if category %}
+                        - <span class="badge badge-secondary">{{ category }}</span>
+                    {% endif %}
+              </h2>
+              
+        ... 생략
+              
+{% endblock %} <----------- 이것들 추가
+
+3) 수정 결과 확인하기
+* python manage.py test
+* python manage.py test blog.tests.TestView.test_post_list
+
+[------------------------------ post_detail.html 모듈화하기 ----------------------------------]
+1) base.html을 확장해 post_detail.html 넣기
+- post_detail.html도 base.html 이용할 수 있게 수정하기
+blog/templates/blog/post_detail.html
+ex)
+{% extends 'blog/base.html' %} <-------
+
+{% block head_title %}
+    {{post.title}} - Blog
+{% endblock %}
+
+{% block main_area %} <-----------
+    ... 생략
+    
+{% endblock %} <------- 이것들 추가
+
+2) 제목 블록을 따로 만들기
+- 
+blog/templates/blog/post_detail.html
+ex)
+{% extends 'blog/base.html' %}
+
+{% block head_title %} <-------
+    {{post.title}} - Blog <------
+{% endblock %}      <---------- 이것들 추가
+
+{% block main_area %} 
+    ... 생략
+    
+{% endblock %}
+
+- 그 후 base.html의 <title> 태그 안에도 블록 위치 추가해서 수정하기
+blog/templates/blog/base.html
+ex)
+<!DOCTYPE html>
+{% load static %}
+<html lang="ko">
+    <head>
+        <meta charset="UTF-8">
+        <title>{% block head_title %}Blog{% endblock %}</title> <--------여기 블록 추가 수정
+        <link href="{% static 'blog/bootstrap4/css/bootstrap.min.css' %}" rel="stylesheet" type="text/css" media="screen">
+        <script src="https://kit.fontawesome.com/35581728fa.js" crossorigin="anonymous"></script>
+    </head>
+    <body>
+
+3) post_detail.html에서 포스트 영역과 댓글 영역 구분하기
+- 포스트 영역에 해당하는 부분은 id="post-area"인 <div>태그로, 댓글 영역에 해당하는 부분은 id="comment-area"인 <div>로 감싸준다.
+blog/templates/blog/post_detail.html
+ex)
+{% extends 'blog/base.html' %}
+
+{% block head_title %}
+    {{post.title}} - Blog
+{% endblock %}
+
+{% block main_area %}
+                    <!-- Post content-->
+                    <div id="post-area">
+                        <!-- Post header-->
+                
+                ... 생략
+                    </div>
+                    
+                    <!-- Comments section-->
+                    <div id="comment-area" class="mb-5">
+                    
+                    ... 생략
+                    
+                    </div>
+{% endblock %}
+
+[----------------------- 내비게이션 바 버튼에 링크 추가하기 --------------------------]
+1) 내비게이션 바 버튼의 href 링크 (navbar.html 참고)
+- < a class="navbar-~~" href="~~"의 href 값을 올바르게 바꿔준다.
+
+blog/templates/blog/base.html
+ex)
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container">
+            <a class="navbar-brand" href="/">InternetProgramming</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+              <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNavDropdown">
+              <ul class="navbar-nav mr-auto">
+                <li class="nav-item active">
+                  <a class="nav-link" href="/">Home</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="/blog/">Blog</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="/about_me/">AboutMe</a>
+                </li>
+                
+[---------------- include로 내비게이션 바와 푸터 모듈화하기 --------------------]
+1) 내비게이션 바를 navbar.html로 모듈화하기
+- blog/templates/blog/ 폴더에 navbar.html 파일을 만들고 base.html의 <nav>태그부터 그아래 모달에 관련된 코드까지 잘라 navbar.html에 붙여넣는다.
+blog/templates/blog/navbar.html
+ex)
+navbar.html 참고
+
+-  그 후 base.html의 비어버린 부분은 {% include 'blog/navbar.html %}로 채워넣는다.
+blog/templates/blog/base.html
+ex)
+    <body>
+        {% include 'blog/navbar.html' %}
+
+        <div class="container">
+2) 푸터를 footer.html로 모듈화하기
+- blog/templates/blog/ 폴더에 footer.html 파일을 만들고 base.html의 <nav>태그부터 그아래 모달에 관련된 코드까지 잘라 navbar.html에 붙여넣는다.
+blog/templates/blog/footer.html
+ex) 
+        <!-- Footer-->
+          <footer class="py-5 bg-dark">
+            <div class="container"><p class="m-0 text-center text-white">Copyright &copy; InternetProgramming 2022</p></div>
+          </footer>
+
+-  그 후 base.html의 비어버린 부분은 {% include 'blog/footer.html %}로 채워넣는다.
+blog/templates/blog/base.html
+ex)
+</div>
+        {% include 'blog/footer.html' %}
+
+

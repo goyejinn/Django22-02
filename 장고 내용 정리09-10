@@ -1,0 +1,381 @@
+*------------------------------------------09. 정적 파일과 미디어 파일 관리하기------------------------------------------*
+
+[-----------포스트 목록 페이지에 부트스트랩 적용하기-------------]
+
+1) static 폴더 만들고 css파일 넣기
+- 먼저 blog/static/blog/bootstrap 폴더를 만들고
+그 안에 bootstrap.min.css 파일과 bootstrap.min.css.map파일을 그 안에 넣어준다.
+
+2) css 파일 경로 지정하기
+- post_list.html 파일에서 <!DOCTYPE html>바로 아래에 {% load static %}을 추가하여 static 파일을 사용하겠다고
+선언해준다. 그리고 <head>태그 안에 원래 bootstrap.min.css 파일 링크가 있던 부분을 다음과 같이 수정한다.
+blog/templates/blog/post_list.html
+ex)
+<!DOCTYPE html>
+{% load static %}
+<html lang="ko">
+<head>
+      <meta chatset="UTF-8">
+      <title>Blog</title>
+      <link href="{% static 'blog/bootstrap4/css/bootstrap.min.css' %}" rel="stylesheet" type="text/css" media="screen">
+      <script src="https://kit.fontawesome.com/35581728fa.js" crossorigin="anonymous"></script>
+   </head>
+   ... 생략
+   </html>
+
+3) 실제 포스트 내용이 표시되도록 수정하기(post_list.html참고)
+blog/templates/blog/post_list.html
+<!-- Featured blog post -->
+                <img class="card-img-top" src="{{p.head_image.url}}" alt="{{p}}의 head_image" />
+                  <div class="card-body">
+                    <h2 class="card-title">{{p.title | upper}}</h2>
+                    <p class="card-text">{{p.content | truncatechars:100 }}</p>
+                    <a href="{{p.get_absolute_url}}">Read more →</a>
+                </div>
+                  <div class="card-footer">
+                      <div class="small text-muted">{{p.created_at | date:"Y-m-d h:m:s"}}</div>
+                      <a href="#">{{p.author | upper}}</a>
+                  </div>
+              </div>
+              {% endfor %}
+
+[----------------- 포스트 상세 페이지에 부트스트랩 적용하기 ---------------------]
+1) start bootstrap 디자인 다운로드
+2) Blog Post 디자인 적용하기
+blog/templates/blog/post_detail.html
+ex)
+<!DOCTYPE html>
+{% load static %} <-------
+<html lang="ko">
+    <head>
+        <meta charset="UTF-8">
+        <title>{{post.title}} - Blog</title> <----
+        <link href="{% static 'blog/bootstrap4/css/bootstrap.min.css' %}" rel="stylesheet" type="text/css" media="screen">
+        <script src="https://kit.fontawesome.com/35581728fa.js" crossorigin="anonymous"></script>
+    </head>
+
+    ... 생략
+
+        <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js" integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.min.js" integrity="sha384-w1Q4orYjBQndcko6MimVbzY0tgp4pWB4lZ7lr30WKz0vr/aWKhXdBNmNb5D92v7s" crossorigin="anonymous"></script>
+    </body>
+</html>
+
+3) 내비게이션 바에 페이지 윗부분이 가려지는 문제 해결하기
+- <nav> 태그의 class에 추가된 fixed-top 때문이다. fixed-top을 지워주면 된다.
+
+4) 실제 포스트 내용이 표시되도록 수정하기
+blog/templates/blog/post_detail.html
+ex)
+<h1 class="fw-bolder mb-1">{{post.title | lower}}</h1>
+                            {% if post.hook_text %}
+                            <h5 class="text-muted">{{post.hook_text}}</h5>
+                            {% endif %}
+                            <!-- Post meta content-->
+                            <div class="text-muted fst-italic mb-2">
+                                Posted on {{post.created_at | date:"Y-m-d h:m:s"}} by {{post.author | upper}}
+                            </div>
+                            <!-- Post categories-->
+                            {% if post.category %}
+                                <a class="badge bg-secondary text-decoration-none link-light" href="#!">{{post.category}}</a>
+                            {% else %}
+                                <a class="badge bg-secondary text-decoration-none link-light" href="#!">미분류</a>
+                            {% endif %}
+                        </header>
+                        <!-- Preview image figure-->
+                        <figure class="mb-4">
+                            {% if post.head_image %}
+                            <img class="img-fluid rounded" src="{{post.head_image.url}}" alt="{{p.title}}의 head_image" />
+                            {% else %}
+                            <img class="img-fluid rounded" src="https://picsum.photos/seed/{{post.pk}}/800/200" alt="random image" />
+                            {% endif %}
+                        </figure>
+                        <!-- Post content-->
+                        <section class="mb-5">
+                            <p class="fs-5 mb-4">{{post.content}}</p>
+
+[---------------미디어 파일 관리하기------------------]
+1) 이미지 폴더 저장하기
+- 먼저 settings.py 파일에 url 추가해준다.
+myDjangoPrj/settings
+ex)
+from pathlib import Path
+import os <------추가
+
+...생략
+
+STATIC_URL = 'static/'
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, '_media') <----- 두줄 추가
+
+- 그 후 models.py 파일을 열어 imageField로 head_image 필드를 추간한다.
+blog/models
+ex)
+from django.db import models
+from django.contrib.auth.models import User
+import os
+
+class Post(models.Model) :
+    title = models.CharField(max_length=30)
+    hook_text = models.CharField(max_length=100, blank=True)
+    content = models.TextField()
+
+    head_image = models.ImageField(upload_to='blog/images/%Y/%m/%d/', blank=True)
+    # %Y : 2022를 표현, %y : 22만을 표현
+    file_upload = models.FileField(upload_to='blog/files/%Y/%m/%d/', blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    # 추후 author 작성
+
+2) pillow 라이브러리 설치하고 마이그레이션하기
+* python manage.py makemigrations
+* pip install Pillow
+* python manage.py makemigrations
+* python manage.py migrate
+
+3) 이미지 업로드 테스트하기
+- 포스트의 파일선택 버튼을 눌러 이미지 파일 추가하고 Save and continue editing 버튼 눌러보기
+
+4) 미디어 파일을 위한 URL 지정하기
+-
+myDjangoPrj/urls.py
+ex)
+from django.contrib import admin
+from django.urls import path, include
+from django.conf import settings <------------
+from django.conf.urls.static import static <----------------
+
+urlpatterns = [ # IP주소/
+    path('admin/', admin.site.urls), # IP 주소/admin
+    path('blog/', include('blog.urls')), # IP 주소/blog
+    path('', include('single_pages.urls')) # IP 주소/
+]
+
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) <------------
+
+- 그 후 post_list.html 파일에 {{p.head_image.url}} 넣어서 수정하기
+blog/templates/blog/post_list.html
+ex)
+{% for p in post_list %}
+              <div class="card mb-4" id="post-{{p.pk}}">
+                  {% if p.head_image %}
+                <img class="card-img-top" src="{{p.head_image.url}}" alt="{{p}}의 head_image" />
+
+
+5) _media 폴더를 .gitignore 버전 관리에서 제외하기
+
+6) 포스트 상세 페이지에 이미지 나타내기
+- post_detail.html 파일에 {{post.head_image.url}} 넣어서 수정하기
+blog/templates/blog/post_detail.html
+ex)
+<!-- Preview image figure-->
+                        <figure class="mb-4">
+                            {% if post.head_image %}
+                            <img class="img-fluid rounded" src="{{post.head_image.url}}" alt="{{p.title}}의 head_image" />
+
+[--------------- 포스트에 파일 올리기 -------------------]
+1) file_upload 필드 만들기
+- blog/models.py에 FileField로 file_upload 필드를 추가한다.
+blog/models.py
+ex)
+class Post(models.Model) :
+    title = models.CharField(max_length=30)
+    hook_text = models.CharField(max_length=100, blank=True)
+    content = models.TextField()
+
+    head_image = models.ImageField(upload_to='blog/images/%Y/%m/%d/', blank=True)
+    # %Y : 2022를 표현, %y : 22만을 표현
+    file_upload = models.FileField(upload_to='blog/files/%Y/%m/%d/', blank=True) <---------이것 추가
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    # 추후 author 작성
+
+2) 파일 업로드 테스트
+- 포스트에서 파일 업로드하고 저장하면  _media 폴더 아래에 해당 경로가 생기고 그 아래에 파일이 저장된다.
+
+
+*--------------------------------------- 10. 페이지 구성 개선하기 -------------------------------------------------*
+
+[---------------if-else문으로 조건에 따라 이미지 보여주기--------------------]
+1) 이미지가 있을 경우 보여주기
+- post_list.html 에서
+blog/templates/blog/post_list.html
+ex)
+{% for p in post_list %}
+              <div class="card mb-4" id="post-{{p.pk}}">
+                  {% if p.head_image %} <------ 이 아래로 추가해주기
+                <img class="card-img-top" src="{{p.head_image.url}}" alt="{{p}}의 head_image" />
+                  {% endif %}
+
+2) 이미지가 없을 경우 사용할 임의의 이미지 가져오기
+blog/templates/blog/post_list.html
+ex)
+{% for p in post_list %}
+              <div class="card mb-4" id="post-{{p.pk}}">
+                  {% if p.head_image %}
+                <img class="card-img-top" src="{{p.head_image.url}}" alt="{{p}}의 head_image" />
+                  {% else %}<----------------이 아래로 추가해주기
+                  <img class="card-img-top" src="https://picsum.photos/seed/{{p.pk}}/800/200" alt="random image"/>
+                  {% endif %}
+
+3) 임의로 나타나는 이미지 고정하기
+blog/templates/blog/post_list.html
+ex)
+{% for p in post_list %}
+              <div class="card mb-4" id="post-{{p.pk}}">
+                  {% if p.head_image %}
+                <img class="card-img-top" src="{{p.head_image.url}}" alt="{{p}}의 head_image" />
+                  {% else %}
+                  <img class="card-img-top" src="https://picsum.photos/seed/{{p.pk}}/800/200" alt="random image"/>
+                  <------{{p.pk}}나 {{p.id}} 추가하기
+                  {% endif %}
+
+4) post_detail.html 파일도 똑같이 해주기
+blog/templates/blog/post_detail.html
+ex)
+<!-- Preview image figure-->
+                        <figure class="mb-4">
+                            {% if post.head_image %}
+                            <img class="img-fluid rounded" src="{{post.head_image.url}}" alt="{{p.title}}의 head_image" />
+                            {% else %}
+                            <img class="img-fluid rounded" src="https://picsum.photos/seed/{{post.pk}}/800/200" alt="random image" />
+                            {% endif %}
+                        </figure>
+
+[-----------첨부파일이 있는 경우 다운로드 버튼 만들기--------------]
+1) 첨부파일 다운로드 버튼 만들기
+- if문을 사용하여 첨부파일이 있는 경우 버튼이 보이도록 post_detail.html을 수정하기
+blog/templates/blog/post_detail.html
+ex)
+        {% if post.file_upload %}
+            <a href="{{post.file_upload.url}}" class="btn btn-outline-dark" role="button" download>
+            Download {{post.get_file_name}}
+            </a>
+        {% endif %}
+
+2) 첨부파일명과 확장자 아이콘 나타내기
+- blog/models.py 에서 파일이름과 첨부파일의 확장자를 알려주는 함수를 만들어준다.
+blog/models.py
+ex)
+from django.db import models
+from django.contrib.auth.models import User
+import os
+
+class Post(models.Model) :
+    title = models.CharField(max_length=30)
+    hook_text = models.CharField(max_length=100, blank=True)
+    content = models.TextField()
+
+    ... 생략
+
+    def get_file_name(self):
+        return os.path.basename(self.file_upload.name)
+
+    def get_file_ext(self):
+        return self.get_file_name().split('.')[-1] # -1은 맨마지막을 의미함
+        # a.txt -> [a txt] 0, 1 ... 순서
+        # b.docx -> b docx
+        # c.xlsx -> c xlsx
+        # a.b.c.txt -> a b c txt 맨마지막요소가 확장자임
+
+- 그 후 post_detail.html의 <head> 태그 안에 font awesome의 kitcode 넣어주기
+blog/templates/blog/post_detail.html
+ex)
+<!DOCTYPE html>
+{% load static %}
+<html lang="ko">
+    <head>
+        <meta charset="UTF-8">
+        <title>{% block head_title %}Blog{% endblock %}</title>
+        <link href="{% static 'blog/bootstrap4/css/bootstrap.min.css' %}" rel="stylesheet" type="text/css" media="screen">
+        <script src="https://kit.fontawesome.com/35581728fa.js" crossorigin="anonymous"></script> <--------이것 추가
+    </head>
+
+- if문을 사용하여 확장자마다 다른 아이콘을 나타내기
+blog/templates/blog/post_detail.html
+ex)
+                                {% if post.file_upload %}
+                                <a href="{{post.file_upload.url}}" class="btn btn-outline-dark" role="button" download>
+                                    {% if post.get_file_ext == 'xlsx' or post.get_file_ext == 'xls' %}
+                                    <i class="fa-regular fa-file-excel"></i>
+                                    {% elif post.get_file_ext == 'docx' or post.get_file_ext == 'doc' %}
+                                    <i class="fa-regular fa-file-word"></i>
+                                    {% else %}
+                                    <i class="fa-regular fa-file"></i>
+                                    {% endif %}
+                                    Download {{post.get_file_name}}
+                                </a>
+                                {% endif %}
+
+[-------------------- 포스트 미리보기 기능 구현하기 -----------------------]
+1) 출력 글자 수 제한하기
+- truncatewords 혹은 truncatechars를 사용하여 단어 수 기준, 글자수 기준으로 자른다.
+blog/templates/blog/post_list.html
+ex)
+                <div class="card-body">
+                      {% if p.category %}
+                        <span class="badge badge-secondary float-right">{{p.category}}</span>
+                      {% else %}
+                        <span class="badge badge-secondary float-right">미분류</span>
+                      {% endif %}
+                    <h2 class="card-title">{{p.title | upper}}</h2>
+                      {% if p.hook_text %}
+                      <h5 class="text-muted">{{p.hook_text}}</h5>
+                      {% endif %}
+                    <p class="card-text">{{p.content | truncatechars:100 }}</p>
+                    <a class="btn btn-primary" href="{{p.get_absolute_url}}">Read more →</a>
+                </div>
+
+2) 요약문 필드 만들기
+- 포스트의 요약문을 보여주는 hook_text라는 새필드 만들기
+- models.py를 열어 hook_text 필드가 비어있지 않을 때는 hook_text 필드 값을 보여주도록 한다.
+blog/models.py
+ex)
+class Post(models.Model) :
+    title = models.CharField(max_length=30)
+    hook_text = models.CharField(max_length=100, blank=True) <---------요것 추가하기
+    content = models.TextField()
+
+3) 템플릿 파일 수정하기
+blog/templates/blog/post_list.html
+ex)
+                <div class="card-body">
+                      {% if p.category %}
+                        <span class="badge badge-secondary float-right">{{p.category}}</span>
+                      {% else %}
+                        <span class="badge badge-secondary float-right">미분류</span>
+                      {% endif %}
+                    <h2 class="card-title">{{p.title | upper}}</h2>
+                      {% if p.hook_text %} <----- 이것아래로 3줄 추가하기
+                      <h5 class="text-muted">{{p.hook_text}}</h5>
+                      {% endif %}
+                    <p class="card-text">{{p.content | truncatechars:100 }}</p>
+                    <a class="btn btn-primary" href="{{p.get_absolute_url}}">Read more →</a>
+                </div>
+4) 포스트 상세 페이지 수정하기
+blog/templates/blog/post_detail.html
+ex)
+                        <header class="mb-4">
+                            <!-- Post title-->
+                            <h1 class="fw-bolder mb-1">{{post.title | lower}}</h1>
+                            {% if post.hook_text %} <-----이 아래로 3줄 추가하기
+                            <h5 class="text-muted">{{post.hook_text}}</h5>
+                            {% endif %}
+                            <!-- Post meta content-->
+                            <div class="text-muted fst-italic mb-2">
+                                Posted on {{post.created_at | date:"Y-m-d h:m:s"}} by {{post.author | upper}}
+                            </div>
+                            <!-- Post categories-->
+                            {% if post.category %}
+                                <a class="badge bg-secondary text-decoration-none link-light" href="#!">{{post.category}}</a>
+                            {% else %}
+                                <a class="badge bg-secondary text-decoration-none link-light" href="#!">미분류</a>
+                            {% endif %}
+                        </header>
+

@@ -1,0 +1,589 @@
+
+* ---- cmder 명령어 모음 ---- *
+
+1) cmder 위치 설정
+cd C:\InternetProgramming\github\midDjango022
+
+2) 가상환경 활성화
+venv\Scripts\activate.bat
+
+3) django 설치
+pip install django
+
+4) Django 프로젝트 생성 : midprj
+django-admin startproject midPrj
+
+5) 서버 구동
+python manage.py runserver
+
+6) 데이터베이스 생성
+python manage.py migrate
+
+7) 데이터베이스에 모델 반영
+python manage.py makemigrations
+python manage.py migrate
+
+8) 관리자 계정 생성
+python manage.py createsuperuser
+kyj5840kyj@duksung.ac.kr
+
+9) 깃 커밋(commit)
+git add .
+git commit -m "~~~"
+git push
+
+10) Django 앱 생성 : blog
+python manage.py startapp blog
+
+
+* ----------------------------- 07. 장고 프로젝트에서 앱 개발하기 -------------------------------- *
+
+[ ----- 블로그의 글을 위한 모델 만들기 ------ ]
+1) Post 모델 만들기
+ - blog/models.py에 만들고 싶은 이름의 모델을 만든다.
+ ex)
+ from django.db import models
+
+ class Post(model.Model) :
+    title = models.CharField(max_length=30)
+    content = models.TextField() //TextField는 문자열 길이 제한 없음
+
+    crated_at = models.DateTimeField()
+    # author:추후 작성 예정
+
+2) Django 프로젝트에 앱 등록
+settings.py에 INSTALLED_APPS라는 리스트에 콤마 찍고 추가할 앱들의 이름 추가
+ex) INSTALL_APPS = [
+    'django.contrib.admin',
+    ...,
+    'blog'
+   ]
+
+[----------------- 관리자 페이지에 모델 등록 -------------]
+1) admin.py에 Post모델 추가하기
+- blog/admin.py 파일을 열고 아래 두줄 추가하여 관리자 페이지에 Post 모델 등록한다.
+blog/admin.py
+ex)
+from django.contrib import admin
+from .models import Post  <---
+
+admin.site.register(Post) <--- 이거 두개 입력
+
+
+[----------- 포스트 개선하기 ------------]
+1) __str__() 함수로 포스트 제목과 번호 보여주기
+- blog/models.py 파일에 있는 Post 모델에 __str__()함수를 선언하기
+blog/models.py
+ex)
+from django.db import models
+
+ class Post(model.Model) :
+    title = models.CharField(max_length=30)
+    content = models.TextField() //TextField는 문자열 길이 제한 없음
+
+    crated_at = models.DateTimeField()
+    # author:추후 작성 예정
+
+    def __str__(self):
+        return f'[{self.pk}]{self.title} <-- 해당 포스트의 pk값, 해당 포스트의 title 값
+
+2) 특정 기준 지역으로 작성 시각 설정하기
+settings.py 파일에서 TIME_ZONE = 'UTC'라고 되어 있는 항목을 TIME_ZONE = 'Asia/Seoul'으로 바꾸고
+USE_TZ = TRUE 를 FAlSE라고 설정한다.
+
+3) 자동으로 작성 시각, 수정 시각 저장
+- blog/models.py 파일에서 updated_at 필드를 DateTimeField로 하나더 만들기
+blog/models.py
+ex)
+from django.db import models
+
+ class Post(model.Model) :
+    title = models.CharField(max_length=30)
+    content = models.TextField() //TextField는 문자열 길이 제한 없음
+
+    crated_at = models.DateTimeField() <---- 괄호 안에 auto_now_add=True를 추가
+    updated_at = models.DateTimeField(auto_now=True) <------ 이 줄 추가
+    # author:추후 작성 예정
+
+    def __str__(self):
+        return f'[{self.pk}]{self.title}'
+
+
+* ----------------------------- 08. 웹 페이지 만들기 ------------------------------------- *
+
+[-------------------포스트 목록 페이지 만들기-------------------]
+1) 블로그 페이지 url로 접속하기
+- urls.py 파일에 blog/로 접속하는 경우를 추가해준다.
+myDjangoPrj/urls.py 파일
+ex)
+from django.contrib import admin
+from django.urls import path, include
+
+urlpatterns = [ # IP주소/
+    path('admin/', admin.site.urls), # IP 주소/admin
+    path('blog/', include('blog.urls')), # IP 주소/blog  <--- 이 줄 추가
+]
+
+2)
+- blog에 urls.py 파일을 새로 만들고 다음과 같이 적어준다.
+blog/urls.py 파일
+ex)
+from django.urls import path
+from . import views
+
+urlpattern = [
+    # 이 부분 채울 예정
+]
+
+[------------FBV로 포스트 목록 페이지 만들기----------------]
+1) blog/urls.py 파일 내용 추가하기
+- FBV란 함수에 기반을 둔 방법이다.
+- urls.py에 들어갈 함수나 클래스 등은 views.py에서 정의한다.
+- blog/urls.py 파일 내용 추가하기
+blog/urls.py 파일
+ex)
+from django.urls import path
+from . import views
+
+urlpattern = [
+    path('', views.index),    <--- views.py에 있는 index라는 함수를 만들계획
+]
+
+2) blog/view.py 에 index() 함수 정의하기
+- blog/views.py 파일에 index함수 정의
+blog/views.py
+ex)
+from django.shortcuts import render
+from .models import Post
+
+def index(request):    <---- 이 함수 추가
+    return render(
+        request,
+        'blog/index.html'
+    )
+
+3) 템플릿 파일 만들기
+- blog/templates/blog 폴더를 새로 만든 다음 index.html을 만들어준다.
+blog/templates/blog/index.html
+ex)
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+      <meta chatset="UTF-8">
+      <title>Blog</title>
+   </head>
+   <body>
+      <h1>Blog</h1>
+   </body>
+   </html>
+
+4) 블로그 페이지에 포스트 목록 나열하기
+- view.py 파일 개선
+blog/views.py
+ex)
+from django.shortcuts import render
+from .models import Post
+
+def index(request):
+    posts = Post.objects.all() <-----
+
+    return render(
+        request,
+        'blog/index.html', <---콤마 추가
+        {
+            'posts' : posts,
+        }   <-----이것 추가
+    )
+
+5) 템플릿 파일 index.html 파일 수정
+- for문에 해당하는 부분은 {% %}로 감싸고, 변수를 의미하는 곳은 {{ }}로 감싸준다.
+blog/templates/blog/index.html
+ex)
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+      <meta chatset="UTF-8">
+      <title>Blog</title>
+   </head>
+   <body>
+      <h1>Blog</h1>
+
+   {% for p in posts %}
+      <h3>{{ p }}</h3>
+   {% endfor %}    <--------- 이것 추가
+   </body>
+   </html>
+
+6) Post 모델의 필드값 보여주기
+blog/templates/blog/index.html
+ex)
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+      <meta chatset="UTF-8">
+      <title>Blog</title>
+   </head>
+   <body>
+      <h1>Blog</h1>
+
+   {% for p int posts %}
+      <hr/>
+      <h2>{{ p.title }}</h2>        <---- 제목
+      <h4>{{ p.created_at }}</h4>   <---- 만든 날짜
+      <p>{{ p.content }}</p>        <---- 내용
+   {% endfor %}    <--------- 이것 추가
+   </body>
+   </html>
+
+7) 최신 포스트부터 보여주기
+- blog/views.py 파일에서 order_by를 사용하여 pk값의 역순으로 정렬하기
+blog/views.py
+ex)
+from django.shortcuts import render
+from .models import Post
+
+def index(request):
+    posts = Post.objects.all().order_by('-pk') <----- 이거 추가해서 역순으로 정렬
+
+    return render(
+        request,
+        'blog/index.html',
+        {
+            'posts' : posts,
+        }
+    )
+
+[--------------- FBV로 포스트 상세 페이지 만들기 -----------------]
+1) 포스트 상세 페이지 URL 정의하기
+- 만약 /blog/ 위에 정수 형태의 값이 붙는 URL이라면 blog/views.py의 single_post_page() 함수에 정의된대로 처리하라는 의미
+blog/urls.py
+ex)
+from django.urls import path
+from . import views
+
+urlpattern = [
+    path('', views.index),
+    path('<int:pk>/', views.single_post_page),    <------- 이거 추가
+]
+
+2) single_post_page() 함수 정의하기
+blog/views.py
+ex)
+from django.shortcuts import render
+from .models import Post
+
+def index(request):
+    posts = Post.objects.all().order_by('-pk')
+
+    return render(
+        request,
+        'blog/index.html',
+        {
+            'posts' : posts,
+        }
+    )
+
+def single_post_page(request, pk): <----------이 함수 추가
+    post = Post.objects.get(pk=pk)
+
+    return render(
+        request,
+        'blog/single_post_page.html',
+        {
+            'post':post,
+        }
+    )
+
+3) 템플릿 파일 만들기
+- blog/templates/blog 폴더에 single_post_page.html을 만들어 준다.
+blog/templates/blog/single_post_page.html
+ex)
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+      <meta chatset="UTF-8">
+      <title>{{ post.title }} - Blog</title>
+   </head>
+   <body>
+   <nav>
+      <a href="/blog/">Blog</a>
+   </nav>
+      <h1>{{ p.title }}</h1>
+      <h4>{{ p.created_at }}</h4>
+      <p>{{ p.content }}</p>
+      <hr/>
+      <h3>여기 댓글이 들어올 수 있겠죠?</h3>
+   {% endfor %}
+   </body>
+   </html>
+
+[------------ 포스트 제목에 링크 만들기 ---------------]
+1) index.html 수정하기
+- {{p.title}}을 <a>태그로 감싸고 href={{p.get_absolute_url}}로 지정하기
+blog/templates/blog/index.html
+ex)
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+      <meta chatset="UTF-8">
+      <title>Blog</title>
+   </head>
+   <body>
+      <h1>Blog</h1>
+
+   {% for p int posts %}
+      <hr/>
+      <h2><a href={{p.get_absolute_url}>{{ p.title }}</a></h2>    <---- 추가
+      <h4>{{ p.created_at }}</h4>   <---- 만든 날짜
+      <p>{{ p.content }}</p>        <---- 내용
+   {% endfor %}    <--------- 이것 추가
+   </body>
+   </html>
+
+2) get_absolute_url() 함수 정의하기
+- models.py에서 Post 모델에 get_absolute_url()함수를 정의학
+blog/models.py
+ex)
+from django.db import models
+
+ class Post(model.Model) :
+    title = models.CharField(max_length=30)
+    content = models.TextField() //TextField는 문자열 길이 제한 없음
+
+    crated_at = models.DateTimeField() <---- 괄호 안에 auto_now_add=True를 추가
+    updated_at = models.DateTimeField(auto_now=True) <------ 이 줄 추가
+    # author:추후 작성 예정
+
+    def __str__(self):
+        return f'[{self.pk}]{self.title}'
+
+    def get_absolute_url(self):
+        return f'/blog/{self.pk}/'
+
+[--------대문 페이지와 자기소개 페이지 만들기----------]
+1) single_pages 앱을 위한 url 지정하기
+myDjangoPrj/urls.py 파일
+ex)
+from django.contrib import admin
+from django.urls import path, include
+
+urlpatterns = [ # IP주소/
+    path('admin/', admin.site.urls), # IP 주소/admin
+    path('blog/', include('blog.urls')), # IP 주소/blog
+    path('', include('single_pages.urls')),     <--------- 이 줄 추가
+]
+
+2) 대문 페이지와 자기소개 페이지의 URL 지정하기
+- 도메인 뒤에 아무것도 없을때는 views.py에 있는 landing()함수 실행해서 대문 페이지 보여주고,
+도메인 뒤에 about_me/가 붙어있을 때는 about_me()함수를 실행해서 자기소개 페이지 보여준다.
+single_pages/urls
+ex)
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    path('about_me/', view.about_me),  <------추가
+    path('', views.landing),     <--------- 이 줄 추가
+]
+
+3) views.py에 함수 정의하기
+single_pages/views.py
+ex)
+from django.shortcuts import render
+
+def landing(request):    <---- 이 함수 추가
+    return render(
+        request,
+        'single_pages/landing.html'
+    )
+
+def about_me(request):    <---- 이 함수 추가
+    return render(
+        request,
+        'single_pages/about_me.html'
+    )
+
+3) 템플릿 파일 만들기
+- blog/templates/blog 폴더를 새로 만든 다음 landing.html과 about_me.html을 각각 만들어준다.
+blog/templates/blog/landing.html
+ex)
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+      <meta chatset="UTF-8">
+      <title>고예진입니다.</title>
+   </head>
+   <body>
+   <nav>
+        <a href="/blog/">Blog</a>
+        <a href="/about_me/">About me</a>
+   </nav>
+   <h1>안녕하세요. 고예진입니다.</h1>
+   <h2>대문페이지</h2>
+   <h3>아직 만들지 않음</h3>
+   </body>
+   </html>
+
+blog/templates/blog/about_me.html
+ex)
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+      <meta chatset="UTF-8">
+      <title>개발자 고예진입니다.</title>
+   </head>
+   <body>
+      <nav>
+        <a href="/blog/">Blog</a>
+        <a href="/about_me/">About me</a>
+   </nav>
+   <h1>안녕하세요. 고예진입니다.</h1>
+   <h2>이력</h2>
+   <h2>Portfolio</h2>
+   <h3>아직 만들지 않음</h3>
+   </body>
+   </html>
+
+
+[---------CBV로 포스트 목록 페이지 만들기------------]
+1) ListView로 포스트 목록 페이지 만들기
+- 여러 포스트 나열할때는 ListView클래스 활용하여 FBV에서 작성했던 코드들은 모두 지우고 2줄만 추가하기
+blog/views.py
+ex)
+from django.shortcuts import render
+from django.views.generic import ListView <---------- 선언 추가
+from .models import Post
+
+class PostList(ListView): <--------------이 두줄만 추가
+    model = Post
+
+/*                 <--------------FBV에서 작성했던 코드들은 삭제하기
+def index(request):
+    posts = Post.objects.all().order_by('-pk')
+
+    return render(
+        request,
+        'blog/index.html',
+        {
+            'posts' : posts,
+        }
+    )
+
+def single_post_page(request, pk): <----------이 함수 추가
+    post = Post.objects.get(pk=pk)
+
+    return render(
+        request,
+        'blog/single_post_page.html',
+        {
+            'post':post,
+        }
+    )
+*/
+
+2) url.py 수정하기
+- URL 끝이 blog/일때는 PostList클래스로 처리하도록 수정하고 기존의 path('', views.index)는 삭제하기
+blog/urls.py
+ex)
+from django.urls import path
+from . import views
+
+urlpattern = [
+    path('', views.PostList.as_view()), <-------이거로 대체
+#   path('', views.index), <--------- 이거는 삭제해도됨
+    path('<int:pk>/', views.single_post_page),
+]
+
+3) 템플릿 파일 지정하기
+- 방법 2가지 : PostList클래스에서 template_name을 직접 지정하는 방법
+             post_list.html을 바로 만드는 것
+첫번째 방법
+blog/views.py
+ex)
+from django.shortcuts import render
+from django.views.generic import ListView
+from .models import Post
+
+class PostList(ListView):
+    model = Post
+    template_name = 'blog/index.html'
+
+두번째 방법
+blog/templates/blog/index.html
+ex)
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+      <meta chatset="UTF-8">
+      <title>Blog</title>
+   </head>
+   <body>
+      <h1>Blog</h1>
+
+   {% for p in post_list %} <--------posts를 post_list로 바꾸기
+      <hr/>
+      <h2><a href={{p.get_absolute_url}>{{ p.title }}</a></h2>
+      <h4>{{ p.created_at }}</h4>
+      <p>{{ p.content }}</p>
+   {% endfor %}
+   </body>
+   </html>
+
+- 그 후 views.py에서 templates_name = 'blog/index.html'을 삭제하기
+blog/views.py
+ex)
+from django.shortcuts import render
+from django.views.generic import ListView
+from .models import Post
+
+class PostList(ListView):
+    model = Post
+#   template_name = 'blog/index.html' <------ 삭제
+
+- 그후 파이참에서 index.html파일을 post_list.html로 수정하기
+
+
+4) 최신 포스트부터 보여주기
+- ordering = '-pk'를 추가
+blog/views.py
+ex)
+from django.shortcuts import render
+from django.views.generic import ListView
+from .models import Post
+
+class PostList(ListView):
+    model = Post
+    ordering = '-pk'
+
+[-------------CBV로 포스트 상세 페이지 만들기-------------------]
+1) DetailView로 포스트 상세 페이지 만들기
+blog/views.py
+ex)
+# from django.shortcuts import render <------- 삭제
+from django.views.generic import ListView, DetailView <-----DetailView 추가
+from .models import Post
+
+class PostList(ListView):
+    model = Post
+    ordering = '-pk'
+
+class PostDetail(DetailView): <----- 함수 추가
+    model = Post
+
+2) urls.py 수정하기
+blog/urls.py
+ex)
+from django.urls import path
+from . import views
+
+urlpattern = [
+    path('<int:pk>/', views.PostDetail.as_view()), <---------- 추가
+    path('', views.PostList.as_view()),
+#   path('', views.index),
+#   path('<int:pk>/', views.single_post_page), <---------삭제하기
+]
+
+3) 템플릿 파일 지정하기
+- single_post_page.html의 파일명을 post_detail.html로 수정하기
+
+
